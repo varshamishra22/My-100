@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>100 Days Challenge — Personal Self-Improvement Tracker</title>
+  
+  <!-- Modern Clean Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Styles -->
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app-root">
+
+    <!-- Top Navigation Header -->
+    <header class="app-header" id="app-header" style="display: none;">
+      <div class="header-container">
+        <div class="logo-brand">
+          <div class="brand-icon">🔥</div>
+          <div class="brand-title">100 Days <span>Challenge</span></div>
+        </div>
+
+        <!-- Desktop Navigation Items -->
+        <nav class="desktop-nav" id="desktop-nav">
+          <button class="nav-item active" data-view="dashboard">
+            <span class="nav-icon">🏠</span> Dashboard
+          </button>
+          <button class="nav-item" data-view="targets">
+            <span class="nav-icon">🎯</span> My Targets
+          </button>
+          <button class="nav-item" data-view="today">
+            <span class="nav-icon">✅</span> Today's Challenge
+          </button>
+          <button class="nav-item" data-view="activity">
+            <span class="nav-icon">📅</span> 100 Days Activity
+          </button>
+          <button class="nav-item" data-view="progress">
+            <span class="nav-icon">📊</span> Progress
+          </button>
+          <button class="nav-item" data-view="profile">
+            <span class="nav-icon">👤</span> Profile
+          </button>
+        </nav>
+
+        <!-- Right Header Controls -->
+        <div class="header-actions">
+          <div class="date-indicator-badge" id="header-day-badge">
+            <span>⏳</span> <span id="header-day-text">Day 1 / 100</span>
+          </div>
+
+          <button class="icon-btn" id="firebase-status-btn" title="Firebase Connection Status">
+            <span id="firebase-status-dot" style="color: #10b981;">🟢</span>
+          </button>
+
+          <button class="btn-signout" id="btn-header-logout" title="Sign Out">
+            <span>🚪</span> <span>Logout</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Testing & Date Simulator Banner (Crucial for evaluation & testing different challenge days) -->
+    <div class="simulator-banner" id="simulator-banner" style="display: none;">
+      <span>⏱️ <strong>Challenge Time Machine (IST):</strong></span>
+      <select id="simulator-date-select">
+        <option value="">Actual Time (IST)</option>
+        <option value="2026-09-28">Pre-Challenge (28 Sep 2026)</option>
+        <option value="2026-09-29" selected>Day 1 — Start (29 Sep 2026)</option>
+        <option value="2026-09-30">Day 2 (30 Sep 2026)</option>
+        <option value="2026-10-01">Day 3 (1 Oct 2026)</option>
+        <option value="2026-10-05">Day 7 (5 Oct 2026)</option>
+        <option value="2026-10-13">Day 15 (13 Oct 2026)</option>
+        <option value="2026-10-25">Day 27 (25 Oct 2026)</option>
+        <option value="2026-11-17">Day 50 — Halfway (17 Nov 2026)</option>
+        <option value="2027-01-06">Day 100 — Finale (6 Jan 2027)</option>
+        <option value="custom">Custom Date...</option>
+      </select>
+      <input type="date" id="simulator-custom-date" style="display: none;" min="2026-09-28" max="2027-01-10">
+      <button id="btn-apply-simulator">Set Date</button>
+      <button id="btn-reset-simulator" style="background: rgba(255,255,255,0.15);">Reset</button>
+    </div>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+
+      <!-- ================= AUTH VIEW ================= -->
+      <section id="auth-view" class="view-section active">
+        <div class="auth-wrapper">
+          <div class="auth-card">
+            <div class="auth-brand">
+              <div class="brand-icon" style="margin: 0 auto 12px; width: 48px; height: 48px; font-size: 1.6rem;">🔥</div>
+              <h1 style="font-size: 1.6rem; font-weight: 800; color: #fff;">100 Days Challenge</h1>
+              <p style="color: var(--text-secondary); font-size: 0.88rem; margin-top: 4px;">
+                29 Sep 2026 — 6 Jan 2027 • Transform your habits
+              </p>
+            </div>
+
+            <!-- Tab Switcher -->
+            <div class="auth-tabs">
+              <button class="auth-tab active" id="tab-login" data-tab="login">Sign In</button>
+              <button class="auth-tab" id="tab-signup" data-tab="signup">Sign Up</button>
+            </div>
+
+            <!-- Global Auth Error Message -->
+            <div class="form-error-msg" id="auth-error-msg"></div>
+
+            <!-- Login Form -->
+            <form id="login-form" class="auth-form">
+              <div class="form-group">
+                <label class="form-label" for="login-email">Email Address</label>
+                <input type="email" id="login-email" class="form-input" placeholder="you@example.com" required autocomplete="email">
+              </div>
+
+              <div class="form-group">
+                <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                  <label class="form-label" for="login-password">Password</label>
+                  <a href="#" id="link-forgot-pw" style="font-size: 0.78rem; color: var(--accent-primary);">Forgot Password?</a>
+                </div>
+                <div class="input-wrapper">
+                  <input type="password" id="login-password" class="form-input" placeholder="••••••••" required autocomplete="current-password">
+                  <button type="button" class="toggle-password-btn" data-target="login-password" aria-label="Toggle password visibility">👁️</button>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary" id="btn-login-submit" style="width: 100%; margin-top: 8px;">
+                <span class="btn-text">Sign In</span>
+                <span class="spinner" style="display: none;"></span>
+              </button>
+            </form>
+
+            <!-- Sign Up Form -->
+            <form id="signup-form" class="auth-form" style="display: none;">
+              <div class="form-group">
+                <label class="form-label" for="signup-name">Full Name</label>
+                <input type="text" id="signup-name" class="form-input" placeholder="Alex Morgan" required autocomplete="name">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="signup-email">Email Address</label>
+                <input type="email" id="signup-email" class="form-input" placeholder="you@example.com" required autocomplete="email">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="signup-password">Password (min 6 characters)</label>
+                <div class="input-wrapper">
+                  <input type="password" id="signup-password" class="form-input" placeholder="••••••••" required minlength="6" autocomplete="new-password">
+                  <button type="button" class="toggle-password-btn" data-target="signup-password" aria-label="Toggle password visibility">👁️</button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="signup-confirm-password">Confirm Password</label>
+                <div class="input-wrapper">
+                  <input type="password" id="signup-confirm-password" class="form-input" placeholder="••••••••" required minlength="6" autocomplete="new-password">
+                  <button type="button" class="toggle-password-btn" data-target="signup-confirm-password" aria-label="Toggle password visibility">👁️</button>
+                </div>
+              </div>
+
+              <button type="submit" class="btn-primary" id="btn-signup-submit" style="width: 100%; margin-top: 8px;">
+                <span class="btn-text">Create Account</span>
+                <span class="spinner" style="display: none;"></span>
+              </button>
+            </form>
+
+            <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-light); text-align: center;">
+              <button type="button" id="btn-quick-demo" class="btn-secondary btn-sm" style="width: 100%; font-size: 0.82rem;">
+                ⚡ Quick Fill Test Account
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 1. DASHBOARD VIEW ================= -->
+      <section id="dashboard-view" class="view-section">
+        <!-- Hero Banner -->
+        <div class="challenge-hero-card">
+          <div class="hero-glow"></div>
+          <div class="hero-content">
+            <div>
+              <div class="hero-welcome-badge">
+                <span>🎯</span> 100 Days of Discipline
+              </div>
+              <h1 class="hero-greeting" id="dash-greeting">Welcome back 👋</h1>
+              <p class="hero-date-text" id="dash-date-text">Loading challenge schedule...</p>
+            </div>
+
+            <div class="hero-day-stat">
+              <div class="day-badge-large">
+                <span class="day-label">CHALLENGE</span>
+                <span class="day-val" id="dash-day-number">Day 1</span>
+              </div>
+              <button class="btn-primary" id="btn-hero-goto-today">
+                <span>Check Today</span> ➔
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5 Statistics Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-icon">🔥</span>
+              <span class="stat-tag">STREAK</span>
+            </div>
+            <div class="stat-value" id="stat-current-streak">0 Days</div>
+            <div class="stat-label">Current Streak</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-icon">🏆</span>
+              <span class="stat-tag">BEST</span>
+            </div>
+            <div class="stat-value" id="stat-longest-streak">0 Days</div>
+            <div class="stat-label">Longest Streak</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-icon">📅</span>
+              <span class="stat-tag">ACTIVE</span>
+            </div>
+            <div class="stat-value" id="stat-active-days">0 / 100</div>
+            <div class="stat-label">Active Days</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-icon">✅</span>
+              <span class="stat-tag">TASKS</span>
+            </div>
+            <div class="stat-value" id="stat-completed-tasks">0</div>
+            <div class="stat-label">Completed Tasks</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-header">
+              <span class="stat-icon">❌</span>
+              <span class="stat-tag">MISSED</span>
+            </div>
+            <div class="stat-value" id="stat-inactive-days">0</div>
+            <div class="stat-label">Inactive Days</div>
+          </div>
+        </div>
+
+        <!-- Dashboard Two-Column Grid: Overall Progress + Weekly Chart -->
+        <div class="dashboard-grid">
+          <!-- Overall Challenge Progress Card -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title"><span>📈</span> Overall Challenge Progress</h2>
+              <span id="dash-progress-fraction" style="font-size: 0.85rem; color: var(--text-secondary); font-family: var(--font-mono);">0 / 100 Days</span>
+            </div>
+
+            <div class="overall-progress-wrapper">
+              <div class="progress-header-info">
+                <span class="progress-pct-big" id="dash-overall-pct">0%</span>
+                <span style="font-size: 0.88rem; color: var(--accent-primary); font-weight: 600;" id="dash-days-remaining">100 Days Left</span>
+              </div>
+              <div class="progress-track">
+                <div class="progress-fill" id="dash-progress-fill" style="width: 0%;"></div>
+              </div>
+              <div class="progress-footer">
+                <span>Start: 29 Sep 2026</span>
+                <span>Day 100: 6 Jan 2027</span>
+              </div>
+            </div>
+
+            <!-- Quick Action Today Card -->
+            <div style="margin-top: 24px; padding: 16px; background: var(--bg-secondary); border-radius: var(--radius-md); border: 1px solid var(--border-light);">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <span style="font-weight: 700; color: #fff; font-size: 0.92rem;">Today's Target Status</span>
+                <span id="dash-today-quick-pct" style="font-family: var(--font-mono); font-weight: 700; color: var(--status-completed);">0%</span>
+              </div>
+              <div class="progress-track" style="height: 8px;">
+                <div class="progress-fill" id="dash-today-quick-fill" style="width: 0%; background: var(--status-completed);"></div>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--text-secondary); margin-top: 6px;">
+                <span id="dash-today-quick-counts">0 / 0 completed</span>
+                <a href="#" id="link-dash-checklist" style="color: var(--accent-primary); font-weight: 600;">Open Checklist ➔</a>
+              </div>
+            </div>
+          </div>
+
+          <!-- Weekly Progress Chart -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title"><span>📊</span> Weekly Progress</h2>
+              <span style="font-size: 0.8rem; color: var(--text-secondary);">Last 7 Days</span>
+            </div>
+            <div class="chart-container">
+              <canvas id="weekly-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Activity Feed -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title"><span>⏱️</span> Recent Activity & History</h2>
+            <button class="btn-secondary btn-sm" id="btn-view-all-activity">View 100 Days ➔</button>
+          </div>
+          <div id="dash-recent-activity-list" style="display: flex; flex-direction: column; gap: 10px;">
+            <div style="color: var(--text-muted); font-size: 0.88rem; text-align: center; padding: 18px;">
+              Your 100-day journey starts here 🌱
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 2. MY TARGETS VIEW ================= -->
+      <section id="targets-view" class="view-section">
+        <div class="section-header">
+          <div>
+            <h1 class="section-title"><span>🎯</span> My Targets</h1>
+            <p class="section-subtitle">Set your daily habits once. They appear in your daily challenge for all 100 days.</p>
+          </div>
+          <button class="btn-primary" id="btn-open-add-target">
+            <span>+</span> Add Target
+          </button>
+        </div>
+
+        <!-- Category filter tabs -->
+        <div class="category-tabs" id="target-category-tabs">
+          <button class="cat-tab active" data-category="all">All Targets</button>
+          <button class="cat-tab" data-category="Career">Career</button>
+          <button class="cat-tab" data-category="Study">Study</button>
+          <button class="cat-tab" data-category="Fitness">Fitness</button>
+          <button class="cat-tab" data-category="Health">Health</button>
+          <button class="cat-tab" data-category="Personal">Personal</button>
+        </div>
+
+        <!-- Targets Grid -->
+        <div class="targets-grid" id="targets-grid">
+          <!-- Populated dynamically -->
+        </div>
+
+        <!-- Empty State for Targets -->
+        <div class="empty-state" id="targets-empty-state" style="display: none;">
+          <div class="empty-icon">🎯</div>
+          <h3 class="empty-title">You haven't added any daily targets yet.</h3>
+          <p class="empty-desc">Create your core daily habits like studying, coding DSA, exercising, or reading to start your challenge.</p>
+          <button class="btn-primary" id="btn-empty-add-target">+ Add Your First Target</button>
+        </div>
+      </section>
+
+      <!-- ================= 3. TODAY'S CHALLENGE VIEW ================= -->
+      <section id="today-view" class="view-section">
+        <div class="section-header">
+          <div>
+            <h1 class="section-title"><span>✅</span> Today's Challenge</h1>
+            <p class="section-subtitle">Complete your daily targets. Mark checkboxes to save directly to Firestore.</p>
+          </div>
+
+          <!-- Day navigation picker -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button class="icon-btn" id="btn-prev-day" title="Previous Day">◀</button>
+            <span id="active-day-display-label" style="font-weight: 700; font-family: var(--font-mono); font-size: 0.9rem; padding: 6px 12px; background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+              Day 1
+            </span>
+            <button class="icon-btn" id="btn-next-day" title="Next Day">▶</button>
+          </div>
+        </div>
+
+        <!-- Pre-Challenge Banner if before Sept 29, 2026 -->
+        <div class="card" id="pre-challenge-alert" style="display: none; background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); margin-bottom: 20px;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 1.6rem;">🚀</span>
+            <div>
+              <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff;">Your 100 Days Challenge starts on 29 September 2026.</h3>
+              <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 2px;">
+                You can configure your targets now so everything is ready for Day 1! Use the Time Machine banner above to preview or simulate challenge days.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="today-challenge-container">
+          <!-- Daily Summary Progress Bar -->
+          <div class="today-summary-bar">
+            <div class="today-meta-row">
+              <div class="today-day-info">
+                <h2 id="checklist-title">Day 1 — 29 September 2026</h2>
+                <p id="checklist-subtitle">Select each target you completed today.</p>
+              </div>
+
+              <div id="checklist-status-badge" class="day-status-pill status-pill-inactive">
+                <span id="checklist-status-icon">🔴</span>
+                <span id="checklist-status-text">Inactive</span>
+              </div>
+            </div>
+
+            <!-- Progress Fraction & Bar -->
+            <div>
+              <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px;">
+                <span id="checklist-count-text" style="font-weight: 600; font-size: 0.95rem; color: #fff;">0 / 0 completed</span>
+                <span id="checklist-pct-text" style="font-family: var(--font-mono); font-weight: 800; font-size: 1.1rem; color: var(--status-completed);">0% Complete</span>
+              </div>
+              <div class="progress-track" style="height: 12px;">
+                <div class="progress-fill" id="checklist-progress-fill" style="width: 0%; background: var(--status-completed);"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Future Day Locked Notice -->
+          <div id="future-day-locked-card" class="card" style="display: none; text-align: center; padding: 40px 20px;">
+            <div style="font-size: 2.8rem; margin-bottom: 12px;">🔒</div>
+            <h3 style="font-size: 1.25rem; font-weight: 800; color: #fff;">Future Day Locked</h3>
+            <p style="color: var(--text-secondary); font-size: 0.9rem; max-width: 420px; margin: 6px auto 0;">
+              You cannot record or edit future days before those dates arrive in IST. Focus on completing today's targets!
+            </p>
+          </div>
+
+          <!-- Empty checklist prompt if 0 targets -->
+          <div id="checklist-no-targets-card" class="empty-state" style="display: none;">
+            <div class="empty-icon">🎯</div>
+            <h3 class="empty-title">No daily targets defined yet.</h3>
+            <p class="empty-desc">Head over to "My Targets" and add 4–5 daily goals to start checking them off.</p>
+            <button class="btn-primary" id="btn-goto-targets-from-checklist">+ Add Daily Targets</button>
+          </div>
+
+          <!-- Checklist Items Wrapper -->
+          <div class="checklist-wrapper" id="checklist-wrapper">
+            <!-- Dynamic checklist targets -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 4. 100 DAYS ACTIVITY VIEW ================= -->
+      <section id="activity-view" class="view-section">
+        <div class="section-header">
+          <div>
+            <h1 class="section-title"><span>📅</span> 100 Days Activity</h1>
+            <p class="section-subtitle">Track your entire 100-day journey at a glance. Click any completed or past day to inspect details.</p>
+          </div>
+        </div>
+
+        <div class="card" style="margin-bottom: 24px;">
+          <!-- Legend -->
+          <div class="heatmap-header">
+            <div class="heatmap-legend">
+              <div class="legend-item">
+                <span class="legend-dot" style="background: var(--status-completed);"></span>
+                <span>🟢 Completed (All targets)</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background: var(--status-partial);"></span>
+                <span>🟡 Partial (At least one)</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background: var(--status-inactive);"></span>
+                <span>🔴 Inactive (0 targets)</span>
+              </div>
+              <div class="legend-item">
+                <span class="legend-dot" style="background: var(--status-locked);"></span>
+                <span>🔒 Future (Locked)</span>
+              </div>
+            </div>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">
+              29 Sep 2026 ➔ 6 Jan 2027
+            </div>
+          </div>
+
+          <!-- 100-Day Grid -->
+          <div class="days-grid-100" id="days-heatmap-grid">
+            <!-- 100 day cells generated dynamically -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 5. PROGRESS & HABIT-WISE VIEW ================= -->
+      <section id="progress-view" class="view-section">
+        <div class="section-header">
+          <div>
+            <h1 class="section-title"><span>📈</span> Habit-wise Progress</h1>
+            <p class="section-subtitle">Calculated strictly from your actual saved daily records across all elapsed days.</p>
+          </div>
+          <button class="btn-secondary" id="btn-view-final-report">
+            🎉 View Final Report
+          </button>
+        </div>
+
+        <div class="dashboard-grid">
+          <!-- Overall Summary -->
+          <div class="card">
+            <h2 class="card-title" style="margin-bottom: 16px;"><span>🎯</span> Consistency Summary</h2>
+            <div style="display: flex; flex-direction: column; gap: 14px;">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-light); padding-bottom: 10px;">
+                <span style="color: var(--text-secondary);">Total Active Days:</span>
+                <span style="font-weight: 700; color: #fff; font-family: var(--font-mono);" id="prog-active-days">0 Days</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-light); padding-bottom: 10px;">
+                <span style="color: var(--text-secondary);">Total Inactive Days:</span>
+                <span style="font-weight: 700; color: var(--status-inactive); font-family: var(--font-mono);" id="prog-inactive-days">0 Days</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-light); padding-bottom: 10px;">
+                <span style="color: var(--text-secondary);">Current Streak:</span>
+                <span style="font-weight: 700; color: var(--status-partial); font-family: var(--font-mono);" id="prog-curr-streak">0 Days</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-light); padding-bottom: 10px;">
+                <span style="color: var(--text-secondary);">Longest Streak:</span>
+                <span style="font-weight: 700; color: var(--status-completed); font-family: var(--font-mono);" id="prog-best-streak">0 Days</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding-top: 4px;">
+                <span style="color: var(--text-secondary);">Overall Task Completion:</span>
+                <span style="font-weight: 800; color: #fff; font-family: var(--font-mono);" id="prog-overall-rate">0%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Habit List -->
+          <div class="card">
+            <h2 class="card-title" style="margin-bottom: 16px;"><span>📊</span> Habit Completion Rates</h2>
+            <div class="habit-progress-list" id="habit-progress-list">
+              <!-- Rendered dynamically -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= 6. PROFILE VIEW ================= -->
+      <section id="profile-view" class="view-section">
+        <div class="section-header">
+          <div>
+            <h1 class="section-title"><span>👤</span> User Profile</h1>
+            <p class="section-subtitle">Account settings, challenge parameters, and cloud persistence status.</p>
+          </div>
+        </div>
+
+        <div class="dashboard-grid">
+          <!-- Profile Card -->
+          <div class="card">
+            <h2 class="card-title" style="margin-bottom: 18px;"><span>🛡️</span> Account Information</h2>
+            
+            <form id="profile-form" style="display: flex; flex-direction: column; gap: 16px;">
+              <div class="form-group">
+                <label class="form-label" for="profile-name">Full Name</label>
+                <input type="text" id="profile-name" class="form-input" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Email Address (Read-only)</label>
+                <input type="email" id="profile-email" class="form-input" disabled style="opacity: 0.7; cursor: not-allowed;">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">Firebase User UID</label>
+                <input type="text" id="profile-uid" class="form-input" disabled style="opacity: 0.7; font-family: var(--font-mono); font-size: 0.8rem; cursor: not-allowed;">
+              </div>
+
+              <div style="display: flex; gap: 12px; margin-top: 6px;">
+                <button type="submit" class="btn-primary" id="btn-save-profile">
+                  <span class="btn-text">Update Profile</span>
+                  <span class="spinner" style="display: none;"></span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Challenge Metadata Card -->
+          <div class="card">
+            <h2 class="card-title" style="margin-bottom: 18px;"><span>📆</span> Challenge Specification</h2>
+
+            <div style="display: flex; flex-direction: column; gap: 14px; font-size: 0.9rem;">
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-light); padding-bottom: 10px;">
+                <span style="color: var(--text-secondary);">Challenge Start:</span>
+                <span style="font-weight: 700; color: #fff;">29 September 2026</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-light); padding-bottom: 10px;">
+                <span style="color: var(--text-secondary);">Day 100 (Finale):</span>
+                <span style="font-weight: 700; color: #fff;">6 January 2027</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-light); padding-bottom: 10px;">
+                <span style="color: var(--text-secondary);">Timezone Standard:</span>
+                <span style="font-weight: 700; color: #fff;">IST (Asia/Kolkata, UTC+5:30)</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--border-light); padding-bottom: 10px;">
+                <span style="color: var(--text-secondary);">Account Created:</span>
+                <span style="font-weight: 700; color: #fff;" id="profile-created-at">—</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; padding-top: 4px;">
+                <span style="color: var(--text-secondary);">Database Security:</span>
+                <span style="font-weight: 700; color: var(--status-completed);">Protected by Firestore Rules</span>
+              </div>
+            </div>
+
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border-light); display: flex; gap: 10px;">
+              <button class="btn-secondary" id="btn-open-firebase-config" style="flex: 1;">
+                ⚙️ Firebase Config
+              </button>
+              <button class="btn-secondary" id="btn-profile-logout" style="color: var(--status-inactive); border-color: rgba(239, 68, 68, 0.4);">
+                🚪 Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav" id="mobile-nav" style="display: none;">
+      <button class="mobile-nav-item active" data-view="dashboard">
+        <span class="mobile-icon">🏠</span>
+        <span>Home</span>
+      </button>
+      <button class="mobile-nav-item" data-view="targets">
+        <span class="mobile-icon">🎯</span>
+        <span>Targets</span>
+      </button>
+      <button class="mobile-nav-item" data-view="today">
+        <span class="mobile-icon">✅</span>
+        <span>Today</span>
+      </button>
+      <button class="mobile-nav-item" data-view="activity">
+        <span class="mobile-icon">📅</span>
+        <span>100 Days</span>
+      </button>
+      <button class="mobile-nav-item" data-view="progress">
+        <span class="mobile-icon">📊</span>
+        <span>Progress</span>
+      </button>
+      <button class="mobile-nav-item" data-view="profile">
+        <span class="mobile-icon">👤</span>
+        <span>Profile</span>
+      </button>
+    </nav>
+
+    <!-- ================= MODALS ================= -->
+
+    <!-- Add/Edit Target Modal -->
+    <div class="modal-backdrop" id="modal-target">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title" id="target-modal-title">Add Daily Target</h2>
+          <button class="modal-close-btn" id="btn-close-target-modal">✕</button>
+        </div>
+
+        <form id="form-target">
+          <input type="hidden" id="target-edit-id">
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" for="target-input-name">Target Name *</label>
+            <input type="text" id="target-input-name" class="form-input" placeholder="e.g. Solve 2 DSA problems" required maxlength="100">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" for="target-input-category">Category *</label>
+            <select id="target-input-category" class="form-input" required>
+              <option value="Career">Career</option>
+              <option value="Study">Study</option>
+              <option value="Fitness">Fitness</option>
+              <option value="Health">Health</option>
+              <option value="Personal">Personal</option>
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 14px;">
+            <label class="form-label" for="target-input-value">Target Goal / Value (Optional)</label>
+            <input type="text" id="target-input-value" class="form-input" placeholder="e.g. 2 hours, 30 mins, 2L" maxlength="50">
+          </div>
+
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label class="form-label" for="target-input-desc">Description (Optional)</label>
+            <textarea id="target-input-desc" class="form-input" rows="3" placeholder="Additional details or guidelines for this daily habit..." maxlength="500"></textarea>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn-secondary" id="btn-cancel-target-modal">Cancel</button>
+            <button type="submit" class="btn-primary" id="btn-save-target">
+              <span class="btn-text">Save Target</span>
+              <span class="spinner" style="display: none;"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Day Detail Modal (When user clicks any day in 100 Days Activity) -->
+    <div class="modal-backdrop" id="modal-day-detail">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title" id="day-modal-title">Day 15 — 13 October 2026</h2>
+            <p id="day-modal-subtitle" style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 2px;">Daily completion breakdown</p>
+          </div>
+          <button class="modal-close-btn" id="btn-close-day-modal">✕</button>
+        </div>
+
+        <div class="day-modal-summary">
+          <div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700;">Progress</div>
+            <div id="day-modal-progress-text" style="font-size: 1.3rem; font-weight: 800; color: #fff; font-family: var(--font-mono);">
+              3/4 — 75%
+            </div>
+          </div>
+          <div id="day-modal-status-badge" class="day-status-pill status-pill-completed">
+            <span id="day-modal-status-icon">🟢</span>
+            <span id="day-modal-status-text">Completed</span>
+          </div>
+        </div>
+
+        <!-- Targets review list -->
+        <div id="day-modal-targets-list" style="display: flex; flex-direction: column; gap: 4px; margin-bottom: 20px;">
+          <!-- Populated dynamically -->
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-light); padding-top: 16px;">
+          <button type="button" class="btn-primary btn-sm" id="btn-modal-open-in-today">
+            Open in Checklist
+          </button>
+          <button type="button" class="btn-secondary btn-sm" id="btn-modal-close-review">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Day 100 Final Report Modal -->
+    <div class="modal-backdrop" id="modal-final-report">
+      <div class="modal-card" style="max-width: 600px;">
+        <div class="final-result-screen">
+          <div class="trophy-badge">🏆</div>
+          <h2 style="font-size: 1.8rem; font-weight: 900; color: #fff; letter-spacing: -0.02em;">🎉 100 DAYS COMPLETED!</h2>
+          <p style="color: #c7d2fe; font-size: 0.92rem; margin-top: 6px;">
+            Challenge Period: 29 September 2026 – 6 January 2027
+          </p>
+
+          <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 24px; text-align: left;">
+            <div style="background: rgba(0, 0, 0, 0.35); padding: 14px; border-radius: var(--radius-md);">
+              <div style="font-size: 0.75rem; color: #a5b4fc; text-transform: uppercase; font-weight: 700;">Total Active Days</div>
+              <div id="report-active-days" style="font-size: 1.5rem; font-weight: 900; color: #fff; font-family: var(--font-mono);">0 / 100</div>
+            </div>
+            <div style="background: rgba(0, 0, 0, 0.35); padding: 14px; border-radius: var(--radius-md);">
+              <div style="font-size: 0.75rem; color: #a5b4fc; text-transform: uppercase; font-weight: 700;">Completed Tasks</div>
+              <div id="report-completed-tasks" style="font-size: 1.5rem; font-weight: 900; color: #fff; font-family: var(--font-mono);">0</div>
+            </div>
+            <div style="background: rgba(0, 0, 0, 0.35); padding: 14px; border-radius: var(--radius-md);">
+              <div style="font-size: 0.75rem; color: #a5b4fc; text-transform: uppercase; font-weight: 700;">Longest Streak</div>
+              <div id="report-longest-streak" style="font-size: 1.5rem; font-weight: 900; color: #fff; font-family: var(--font-mono);">0 Days</div>
+            </div>
+            <div style="background: rgba(0, 0, 0, 0.35); padding: 14px; border-radius: var(--radius-md);">
+              <div style="font-size: 0.75rem; color: #a5b4fc; text-transform: uppercase; font-weight: 700;">Completion Rate</div>
+              <div id="report-overall-rate" style="font-size: 1.5rem; font-weight: 900; color: #fff; font-family: var(--font-mono);">0%</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 14px; background: rgba(0, 0, 0, 0.25); padding: 12px; border-radius: var(--radius-md); font-size: 0.85rem; color: #e0e7ff;">
+            Inactive Days: <strong id="report-inactive-days">0</strong> • Consistency Rating: <strong id="report-consistency-grade">Master of Discipline</strong>
+          </div>
+
+          <div style="margin-top: 24px;">
+            <button class="btn-primary" id="btn-close-final-report" style="width: 100%;">
+              Back to Challenge
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Forgot Password Modal -->
+    <div class="modal-backdrop" id="modal-forgot-pw">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2 class="modal-title">Reset Password</h2>
+          <button class="modal-close-btn" id="btn-close-forgot-pw">✕</button>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 0.88rem; margin-bottom: 16px;">
+          Enter your registered email address and we'll send a password reset link to your inbox.
+        </p>
+        <form id="form-forgot-pw">
+          <div class="form-group" style="margin-bottom: 20px;">
+            <label class="form-label" for="forgot-email">Account Email</label>
+            <input type="email" id="forgot-email" class="form-input" placeholder="you@example.com" required>
+          </div>
+          <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" class="btn-secondary" id="btn-cancel-forgot-pw">Cancel</button>
+            <button type="submit" class="btn-primary" id="btn-submit-forgot-pw">
+              <span class="btn-text">Send Reset Email</span>
+              <span class="spinner" style="display: none;"></span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Firebase Configuration Modal -->
+    <div class="modal-backdrop" id="modal-firebase-config">
+      <div class="modal-card" style="max-width: 580px;">
+        <div class="modal-header">
+          <h2 class="modal-title">⚙️ Firebase Project Connection</h2>
+          <button class="modal-close-btn" id="btn-close-fb-config">✕</button>
+        </div>
+
+        <p style="color: var(--text-secondary); font-size: 0.86rem; margin-bottom: 16px;">
+          The application is fully wired for <strong>Firebase Auth</strong> and <strong>Firestore</strong>. You can connect your live Firebase project below or use the active cloud connection.
+        </p>
+
+        <form id="form-firebase-config">
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label class="form-label">Firebase Config (Paste JSON or fill fields)</label>
+            <textarea id="fb-config-json" class="form-input" rows="4" placeholder='{"apiKey": "...", "authDomain": "...", "projectId": "...", ...}' style="font-family: var(--font-mono); font-size: 0.8rem;"></textarea>
+          </div>
+
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px;">
+            Active status: <span id="fb-active-mode-label" style="font-weight: 700; color: var(--status-completed);">Cloud Connected</span>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--border-light); padding-top: 16px;">
+            <button type="button" class="btn-secondary btn-sm" id="btn-reset-fb-config">Reset Default</button>
+            <div style="display: flex; gap: 10px;">
+              <button type="button" class="btn-secondary" id="btn-cancel-fb-config">Cancel</button>
+              <button type="submit" class="btn-primary" id="btn-save-fb-config">Save & Connect</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+  </div>
+
+  <!-- Scripts -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>

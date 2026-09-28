@@ -1,0 +1,263 @@
+rules_version = '2';
+
+// ===============================================================
+// Assumed Data Model
+// ===============================================================
+//
+// This security rules file assumes the following data structures:
+//
+// Collection: users
+// Document ID: {uid} (Firebase Auth UID of the user)
+// Fields:
+//   - name: string (required, 1..100 chars) - User's display name
+//   - email: string (required, valid email format, max 100 chars) - User's email address
+//   - challengeStartDate: string (required, YYYY-MM-DD format) - Start date of the 100-day challenge
+//   - challengeEndDate: string (required, YYYY-MM-DD format) - End date of the 100-day challenge
+//   - createdAt: timestamp or ISO string (required, immutable) - Record creation time
+//   - updatedAt: timestamp or ISO string (optional) - Record modification time
+//   - uid: string (optional, if provided must match document ID and request.auth.uid)
+//
+// Subcollection: users/{uid}/targets
+// Document ID: {targetId} (Auto-generated or custom target identifier)
+// Fields:
+//   - name: string (required, 1..100 chars) - Name of habit / task
+//   - description: string (optional, max 500 chars) - Detailed description
+//   - category: string (required, one of: 'Career', 'Study', 'Fitness', 'Health', 'Personal')
+//   - targetValue: string (optional, max 50 chars) - Quantifiable goal metric
+//   - active: bool (required) - Whether target is currently active
+//   - createdAt: timestamp or ISO string (required, immutable) - Creation time
+//   - updatedAt: timestamp or ISO string (optional) - Modification time
+//   - id / targetId: string (optional, if present must match {targetId})
+//
+// Subcollection: users/{uid}/days
+// Document ID: {dayId} (String matching dayNumber 1..100, e.g. "1" or "day-1")
+// Fields:
+//   - dayNumber: int (required, 1..100, immutable) - The 1-based day index
+//   - date: string (required, YYYY-MM-DD format, immutable) - Date corresponding to this challenge day
+//   - completedTargets: list or map (required, max size 100) - Completed target IDs or status map
+//   - totalTargets: int (required, >= 0 and <= 1000) - Total target count for the day
+//   - completedCount: int (required, >= 0 and <= 1000) - Count of completed targets
+//   - completionPercentage: number (required, 0..100) - Calculated completion percentage
+//   - status: string (required, one of: 'completed', 'partial', 'inactive') - Day completion status
+//   - updatedAt: timestamp or ISO string (required) - Timestamp of daily log update
+//   - createdAt: timestamp or ISO string (optional, immutable) - Creation timestamp if recorded
+//   - notes: string (optional, max 1000 chars) - User notes or reflection for the day
+//
+// ===============================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+
+    // Check if the request is from an authenticated user
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Check if the authenticated user matches the expected owner userId
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // Validate presence of all mandatory keys
+    function hasRequiredFields(data, fields) {
+      return data.keys().hasAll(fields);
+    }
+
+    // Enforce strict schema with no unauthorized or extraneous keys
+    function hasOnlyAllowedFields(data, fields) {
+      return data.keys().hasOnly(fields);
+    }
+
+    // Validate string type and bounds
+    function isValidString(val, minLen, maxLen) {
+      return val is string && val.size() >= minLen && val.size() <= maxLen;
+    }
+
+    // Validate optional string (if present, must be string within limits)
+    function isValidOptionalString(data, field, minLen, maxLen) {
+      return !(field in data) || (data[field] is string && data[field].size() >= minLen && data[field].size() <= maxLen);
+    }
+
+    // Validate email format
+    function isValidEmail(email) {
+      return email is string &&
+        email.size() >= 3 &&
+        email.size() <= 100 &&
+        email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+[.][a-zA-Z]{2,}$');
+    }
+
+    // Validate strict date format (YYYY-MM-DD)
+    function isValidDateOnly(dateStr) {
+      return dateStr is string &&
+        dateStr.size() == 10 &&
+        dateStr.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$');
+    }
+
+    // Validate ISO 8601 date string format (e.g. 2026-09-28T20:24:46Z)
+    function isValidIsoDateString(dateStr) {
+      return dateStr is string &&
+        dateStr.size() >= 19 &&
+        dateStr.size() <= 40 &&
+        dateStr.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}.*');
+    }
+
+    // Validate either native Firestore timestamp or formatted ISO string
+    function isValidTimestampOrIso(val) {
+      return val is timestamp || isValidIsoDateString(val);
+    }
+
+    // Validate optional timestamp or ISO string
+    function isValidOptionalTimestampOrIso(data, field) {
+      return !(field in data) || isValidTimestampOrIso(data[field]);
+    }
+
+    // ===============================================================
+    // Domain Validators: Users Collection
+    // ===============================================================
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(data, ['name', 'email', 'challengeStartDate', 'challengeEndDate', 'createdAt', 'updatedAt', 'uid']) &&
+        hasRequiredFields(data, ['name', 'email', 'challengeStartDate', 'challengeEndDate', 'createdAt']) &&
+        isValidString(data.name, 1, 100) &&
+        isValidEmail(data.email) &&
+        isValidDateOnly(data.challengeStartDate) &&
+        isValidDateOnly(data.challengeEndDate) &&
+        isValidTimestampOrIso(data.createdAt) &&
+        isValidOptionalTimestampOrIso(data, 'updatedAt');
+    }
+
+    function isValidUserCreate(uid, data) {
+      return isValidUser(data) &&
+        (!('uid' in data) || data.uid == uid);
+    }
+
+    function isValidUserUpdate(uid, data, prev) {
+      return isValidUser(data) &&
+        data.createdAt == prev.createdAt &&
+        (!('uid' in data) || data.uid == uid);
+    }
+
+    // ===============================================================
+    // Domain Validators: Targets Subcollection
+    // ===============================================================
+
+    function isValidCategory(category) {
+      return category in ['Career', 'Study', 'Fitness', 'Health', 'Personal'];
+    }
+
+    function isValidTarget(data) {
+      return hasOnlyAllowedFields(data, ['name', 'description', 'category', 'targetValue', 'active', 'createdAt', 'updatedAt', 'id', 'targetId']) &&
+        hasRequiredFields(data, ['name', 'category', 'active', 'createdAt']) &&
+        isValidString(data.name, 1, 100) &&
+        isValidOptionalString(data, 'description', 0, 500) &&
+        isValidCategory(data.category) &&
+        isValidOptionalString(data, 'targetValue', 0, 50) &&
+        data.active is bool &&
+        isValidTimestampOrIso(data.createdAt) &&
+        isValidOptionalTimestampOrIso(data, 'updatedAt');
+    }
+
+    function isValidTargetCreate(targetId, data) {
+      return isValidTarget(data) &&
+        (!('id' in data) || data.id == targetId) &&
+        (!('targetId' in data) || data.targetId == targetId);
+    }
+
+    function isValidTargetUpdate(targetId, data, prev) {
+      return isValidTarget(data) &&
+        data.createdAt == prev.createdAt &&
+        (!('id' in data) || data.id == targetId) &&
+        (!('targetId' in data) || data.targetId == targetId);
+    }
+
+    // ===============================================================
+    // Domain Validators: Days Subcollection
+    // ===============================================================
+
+    function isValidStatus(status) {
+      return status in ['completed', 'partial', 'inactive'];
+    }
+
+    function isValidDayId(dayId, dayNumber) {
+      return dayId == string(dayNumber) || dayId == ('day-' + string(dayNumber));
+    }
+
+    function isValidCompletedTargets(val) {
+      return (val is list && val.size() <= 100) ||
+        (val is map && val.size() <= 100);
+    }
+
+    function isValidDay(data) {
+      return hasOnlyAllowedFields(data, ['dayNumber', 'date', 'completedTargets', 'totalTargets', 'completedCount', 'completionPercentage', 'status', 'updatedAt', 'createdAt', 'notes']) &&
+        hasRequiredFields(data, ['dayNumber', 'date', 'completedTargets', 'totalTargets', 'completedCount', 'completionPercentage', 'status', 'updatedAt']) &&
+        data.dayNumber is int &&
+        data.dayNumber >= 1 &&
+        data.dayNumber <= 100 &&
+        isValidDateOnly(data.date) &&
+        isValidCompletedTargets(data.completedTargets) &&
+        data.totalTargets is int &&
+        data.totalTargets >= 0 &&
+        data.totalTargets <= 1000 &&
+        data.completedCount is int &&
+        data.completedCount >= 0 &&
+        data.completedCount <= 1000 &&
+        data.completionPercentage is number &&
+        data.completionPercentage >= 0 &&
+        data.completionPercentage <= 100 &&
+        isValidStatus(data.status) &&
+        isValidTimestampOrIso(data.updatedAt) &&
+        isValidOptionalTimestampOrIso(data, 'createdAt') &&
+        isValidOptionalString(data, 'notes', 0, 1000);
+    }
+
+    function isValidDayCreate(dayId, data) {
+      return isValidDay(data) &&
+        isValidDayId(dayId, data.dayNumber);
+    }
+
+    function isValidDayUpdate(dayId, data, prev) {
+      return isValidDay(data) &&
+        isValidDayId(dayId, data.dayNumber) &&
+        data.dayNumber == prev.dayNumber &&
+        data.date == prev.date &&
+        (!('createdAt' in prev) || !('createdAt' in data) || data.createdAt == prev.createdAt);
+    }
+
+    // ===============================================================
+    // Security Rules Matches
+    // ===============================================================
+
+    // Root user document
+    match /users/{uid} {
+      allow read: if isOwner(uid);
+      allow create: if isOwner(uid) && isValidUserCreate(uid, request.resource.data);
+      allow update: if isOwner(uid) && isValidUserUpdate(uid, request.resource.data, resource.data);
+      allow delete: if isOwner(uid);
+
+      // Subcollection: Targets
+      match /targets/{targetId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && isValidTargetCreate(targetId, request.resource.data);
+        allow update: if isOwner(uid) && isValidTargetUpdate(targetId, request.resource.data, resource.data);
+        allow delete: if isOwner(uid);
+      }
+
+      // Subcollection: Days
+      match /days/{dayId} {
+        allow read: if isOwner(uid);
+        allow create: if isOwner(uid) && isValidDayCreate(dayId, request.resource.data);
+        allow update: if isOwner(uid) && isValidDayUpdate(dayId, request.resource.data, resource.data);
+        allow delete: if isOwner(uid);
+      }
+    }
+
+    // Global default deny for any other collection or path
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

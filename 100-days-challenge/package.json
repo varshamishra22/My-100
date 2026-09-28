@@ -1,0 +1,20 @@
+{
+  "name": "100-days-challenge",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "100 Days Challenge — Production Quality Personal Self-Improvement Tracker",
+  "main": "app.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test-challenge-logic.js && node test-persistence-flow.js"
+  },
+  "keywords": [
+    "100-days-challenge",
+    "habit-tracker",
+    "self-improvement",
+    "firebase",
+    "firestore"
+  ],
+  "author": "Antigravity",
+  "license": "MIT"
+}
